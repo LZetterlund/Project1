@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <style>
+    label, span{
+      	font-size: 16px;
+      	padding-right:2em;
+        padding-left:2em;
+      }
+    </style>
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="https://npmcdn.com/babel-core@5.8.38/browser.min.js"></script>
+    <script type="text/babel" >
+        "use strict";
+        let canvas = document.getElementById("canvas");
+        let ctx = canvas.getContext("2d");
+        let player1Canvas = document.getElementById("player1Canvas");
+        let player1Ctx = player1Canvas.getContext("2d");
+        let player2Canvas = document.getElementById("player2Canvas");
+        let player2Ctx = player2Canvas.getContext("2d");
+        let sendBufferCanvas;
+        let sendBufferCtx;
+        let dragging = false;
+        let strokeStyleSelector = document.querySelector('#strokeStyleSelector');
+        let eraser = document.querySelector('#eraseButton');
+        let user;
+
+        const socket = io.connect();
+
+        const connectSocket = (e) => {
+            socket.on('connect', () => {
+                console.log('connecting');
+                
+                const data = { userID: user };
+
+                socket.emit('join', data);
+            });
+
+            socket.on('draw', (data) => {
+                console.log(data);
+                handleMessage(data);
+            });
+        };
+
+        const setup = () => {
+            sendBufferCanvas = document.createElement("canvas");
+            sendBufferCanvas.height = 200;
+            sendBufferCanvas.width = 200;
+            sendBufferCtx = sendBufferCanvas.getContext("2d");
+            
+            ctx.fillStyle = "#FF0000";
+            let newX = Math.floor(Math.random()*500 +10);
+            let newY = Math.floor(Math.random()*500 +10);
+            sendBufferCtx.fillRect(0,0, 200, 200); //draw to hidden buffer-->
+
+            const data = {
+                x: 0,
+                y: 0,
+                height: 200,
+                width: 300, 
+                imgData: sendBufferCanvas.toDataURL(),
+                userID: user   
+            };
+
+            //socket.emit("update", data);
+        }
+
+        const handleMessage = (data) => {
+
+            let image = new Image();
+                        image.src = data.imgData;
+
+            image.onload = () => {
+                if(data.isPlayer1 == true){
+                    player1Ctx.save();
+                    player1Ctx.globalCompositeOperation = "source-over"; //this is default for canvas-->
+                    player1Ctx.drawImage(image, data.x, data.y, data.width, data.height);    
+                    player1Ctx.restore();
+                }
+                else{
+                    player2Ctx.save();
+                    player2Ctx.globalCompositeOperation = "source-over"; //this is default for canvas-->
+                    player2Ctx.drawImage(image, data.x, data.y, data.width, data.height);    
+                    player2Ctx.restore();
+                }
+            };
+        }
+
+        const init = () => {
+        //Hook up event listeners
+		  canvas.onmousedown = doMousedown;
+		  canvas.onmousemove = doMousemove;
+		  canvas.onmouseup = doMouseup;
+		  canvas.onmouseout = doMouseout;
+          user = `user${(Math.floor((Math.random()*1000)) + 1)}`;
+          connectSocket();
+          setup();
+        };
+
+	const doMousedown = (mouseData) => {
+	    dragging = true;
+
+	    //get location off mouse in cannvas coordinates
+	    var mouse = getMouse(mouseData);
+	     ctx.beginPath();
+	     ctx.moveTo(mouse.x, mouse.y);
+	}
+
+    const doMousemove = (mouseData) => {
+ 	    //bail out if the mouse button is not down
+ 	    if (!dragging) return;
+
+ 	    //get location of mouse in canvas coordinates
+ 	    var mouse = getMouse(mouseData);
+
+ 	      // set ctx.strokeStyle and ctx.lineWidth to correct values and switch if eraser
+ 	      ctx.strokeStyle = strokeStyleSelector.value;
+ 	      ctx.lineWidth = 5;
+          if(eraser.checked == true) {
+              ctx.strokeStyle = "white";
+              ctx.lineWidth = 15;
+          }
+
+ 	      //draw a line to x,y of mouse
+ 	      ctx.lineTo(mouse.x, mouse.y);
+
+ 	      //stroke the line
+ 	      ctx.stroke();
+    }
+
+    const doMouseup = () => {
+	   ctx.closePath();
+       dragging = false;
+            const data = {
+                x: 0,
+                y: 0,
+                height: 200,
+                width: 300, 
+                imgData: canvas.toDataURL(),
+                userID: user
+            };
+        socket.emit("update", data);
+    }
+
+	const doMouseout = () => {
+	   ctx.closePath();
+	   dragging = false;
+        const data = {
+                x: 0,
+                y: 0,
+                height: 200,
+                width: 300, 
+                imgData: canvas.toDataURL(),
+                userID: user   
+            };
+        socket.emit("update", data);
+	}
+    
+    //This method originally written by Tony Jefferson (IGM)
+	const getMouse = (mouseData) => {
+		var mouse = {}
+		mouse.x = mouseData.pageX - mouseData.target.offsetLeft;
+		mouse.y = mouseData.pageY - mouseData.target.offsetTop;
+		return mouse;
+	}
+    
+    //somehow not sending information even though it is set up exactly the same as other methods
+    const disconnect = () => {
+        const data = { userID: user, debug: 1 };
+        socket.emit('disconnect', data);
+    }
+
+        window.onload = init;
+        window.onclose = disconnect;
+    </script>
+</head>
+<body>
+    <canvas id="canvas" width="900" height="600" style="border: 1px solid black;"></canvas><br/>
+    <p>Draw a </p>
+    <canvas id="player1Canvas" width="300" height="200" style="border: 1px solid black;"></canvas>
+    <canvas id="player2Canvas" width="300" height="200" style="border: 1px solid black;"></canvas><br/>
+        <label>
+            Stroke Color:
+            <select id="strokeStyleSelector">
+                <option value="black">Black</option>
+                <option value="red">Red</option>
+                <option value="green">Green</option>
+                <option value="blue">Blue</option>
+            </select>
+        </label>
+        <span>Eraser<input id="eraseButton" type="checkbox" value="Eraser"/></span>
+</body>
+</html>
