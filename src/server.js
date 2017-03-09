@@ -46,12 +46,12 @@ const update = (data) => {
 };
 
 // supposed to open up new spot for player 1, but somehow data is always undefined
-const disconnect = (data) => {
-  console.log(`Current: ${data.userID} Player1: ${player1ID} ${data.debug}`);
-  if (data.userID === player1ID) {
-    player1ID = null;
-    console.log('disconnecting');
-  }
+const disconnect = () => {
+  // console.log(`Current: ${data.userID} Player1: ${player1ID} ${data.debug}`);
+  // if (data.userID === player1ID) {
+  player1ID = null;
+    // console.log('disconnecting');
+  // }
 };
 
 
@@ -67,7 +67,8 @@ io.sockets.on('connection', (socket) => {
     update(data);
   });
   socket.on('disconnect', (data) => {
-    console.log(`Current: ${data.userID} Player1: ${player1ID} ${data.debug}`);
+      // data is being buggy right now for this method only
+    // console.log(`Current: ${data.userID} Player1: ${player1ID} ${data.debug}`);
     disconnect(data);
   });
 });
