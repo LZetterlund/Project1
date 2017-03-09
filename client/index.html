@@ -71,6 +71,7 @@
                         image.src = data.imgData;
 
             image.onload = () => {
+                //displays the players drawings on only one canvas
                 if(data.isPlayer1 == true){
                     player1Ctx.save();
                     player1Ctx.globalCompositeOperation = "source-over"; //this is default for canvas-->
@@ -176,7 +177,7 @@
 </head>
 <body>
     <canvas id="canvas" width="900" height="600" style="border: 1px solid black;"></canvas><br/>
-    <p>Draw a </p>
+    <p>Draw an [insert object here] for now a tree.</p>
     <canvas id="player1Canvas" width="300" height="200" style="border: 1px solid black;"></canvas>
     <canvas id="player2Canvas" width="300" height="200" style="border: 1px solid black;"></canvas><br/>
         <label>
