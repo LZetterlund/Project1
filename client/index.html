@@ -7,6 +7,11 @@
       	padding-right:2em;
         padding-left:2em;
       }
+        p{
+            padding-bottom: 0;
+            margin-bottom: 0; 
+            font-weight: 900;
+        }
     </style>
     <script src="/socket.io/socket.io.js"></script>
     <script src="https://npmcdn.com/babel-core@5.8.38/browser.min.js"></script>
@@ -32,15 +37,15 @@
         const connectSocket = (e) => {
             socket.on('connect', () => {
                 console.log('waiting for room to enter');
-                
-                //const data = { userID: user, roomID: room };
-
-                //socket.emit('join', data);
             });
 
             socket.on('draw', (data) => {
                 console.log(data);
                 handleMessage(data);
+            });
+            
+            socket.on('UI', (data) => {
+               setUI(data); 
             });
             
             socket.on('doDisconnect', (data) => {
@@ -60,28 +65,18 @@
             enterRoomButton.style.display = 'none';
         };
 
-        const setup = () => {
-            sendBufferCanvas = document.createElement("canvas");
-            sendBufferCanvas.height = 200;
-            sendBufferCanvas.width = 200;
-            sendBufferCtx = sendBufferCanvas.getContext("2d");
-            
-            ctx.fillStyle = "#FF0000";
-            let newX = Math.floor(Math.random()*500 +10);
-            let newY = Math.floor(Math.random()*500 +10);
-            sendBufferCtx.fillRect(0,0, 200, 200); //draw to hidden buffer-->
-
-            const data = {
-                x: 0,
-                y: 0,
-                height: 200,
-                width: 300, 
-                imgData: sendBufferCanvas.toDataURL(),
-                userID: user   
-            };
-
-            //socket.emit("update", data);
-        }
+        const setUI = (data) => {
+            console.log(data.isPlayer1 + ", " + data.isPlayer2);
+            if(data.isPlayer1) {
+                document.getElementById("playerRole").innerHTML = "You are Drawer 1.";
+            }
+            else if(data.isPlayer2) {
+                document.getElementById("playerRole").innerHTML = "You are Drawer 2.";
+            }
+            else {
+                document.getElementById("playerRole").innerHTML = "You are a viewer/voter.";
+            }
+        };
 
         const handleMessage = (data) => {
 
@@ -121,7 +116,6 @@
           enterRoomButton.onclick = enterRoom;
           user = `user${(Math.floor((Math.random()*100000)) + 1)}`;
           connectSocket();
-          setup();
         };
 
 	const doMousedown = (mouseData) => {
@@ -207,19 +201,14 @@
                 roomID: room
             };
         socket.emit("update", data);
-        socket.emit("disconnec", data);
+        socket.emit("discPlayers", data);
     }
 
         window.onload = init;
-        //window.onload = disconnect;
-//        window.onunload = function(){
-//            disconnect();
-//            return null;
-//        };
-        //canvas.onblur = disconnect;
     </script>
 </head>
 <body>
+    <p id="playerRole"></p>
     <canvas id="canvas" width="900" height="600" style="border: 1px solid black;"></canvas><br/>
             <label>
             Stroke Color:
@@ -231,7 +220,7 @@
             </select>
         </label>
         <span>Eraser<input id="eraseButton" type="checkbox" value="Eraser"/></span>
-    <p>Draw an [insert object here] for now a tree.</p>
+    <p>Draw a tree. Remember, the voters don't know what you or you opponent are trying to draw, you could try to fake them out.</p>
     <canvas id="player1Canvas" width="300" height="200" style="border: 1px solid black;"></canvas>
     <canvas id="player2Canvas" width="300" height="200" style="border: 1px solid black;"></canvas><br/>
     <input type="text" id="room" placeholder="Enter room name:">
