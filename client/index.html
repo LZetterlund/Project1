@@ -24,22 +24,40 @@
         let strokeStyleSelector = document.querySelector('#strokeStyleSelector');
         let eraser = document.querySelector('#eraseButton');
         let user;
+        let enterRoomButton = document.getElementById("roomEnter");
+        let room;
 
         const socket = io.connect();
 
         const connectSocket = (e) => {
             socket.on('connect', () => {
-                console.log('connecting');
+                console.log('waiting for room to enter');
                 
-                const data = { userID: user };
+                //const data = { userID: user, roomID: room };
 
-                socket.emit('join', data);
+                //socket.emit('join', data);
             });
 
             socket.on('draw', (data) => {
                 console.log(data);
                 handleMessage(data);
             });
+            
+            socket.on('doDisconnect', (data) => {
+               disconnect(); 
+            });
+        };
+
+        const enterRoom = () => {
+            //currently allows from re-entering after the first one, consider change
+            room = document.getElementById("room").value;
+            console.log(room);
+            if(room != null){
+                const data = { userID: user, roomID: room };
+                socket.emit('join', data);
+            }
+            document.getElementById("room").disabled = true;
+            enterRoomButton.style.display = 'none';
         };
 
         const setup = () => {
@@ -71,6 +89,7 @@
                         image.src = data.imgData;
 
             image.onload = () => {
+                console.log("player1Check: " + data.isPlayer1 + "player2Check: " + data.isPlayer2);
                 //displays the players drawings on only one canvas
                 if(data.isPlayer1 == true){
                     player1Ctx.save();
@@ -78,22 +97,29 @@
                     player1Ctx.drawImage(image, data.x, data.y, data.width, data.height);    
                     player1Ctx.restore();
                 }
-                else{
-                    player2Ctx.save();
-                    player2Ctx.globalCompositeOperation = "source-over"; //this is default for canvas-->
-                    player2Ctx.drawImage(image, data.x, data.y, data.width, data.height);    
-                    player2Ctx.restore();
+                else{ 
+                    if(data.isPlayer2 == true){
+                        player2Ctx.save();
+                        player2Ctx.globalCompositeOperation = "source-over"; //this is default for canvas-->
+                        player2Ctx.drawImage(image, data.x, data.y, data.width, data.height);    
+                        player2Ctx.restore();
+                    }
                 }
             };
         }
 
         const init = () => {
-        //Hook up event listeners
+        //Paint canvas white and update to clear any drawings from a past player
+          ctx.fillStyle="white";
+          ctx.fillRect(0,0,900, 600);
+          doMouseout();
+          //Hook up event listeners
 		  canvas.onmousedown = doMousedown;
 		  canvas.onmousemove = doMousemove;
 		  canvas.onmouseup = doMouseup;
 		  canvas.onmouseout = doMouseout;
-          user = `user${(Math.floor((Math.random()*1000)) + 1)}`;
+          enterRoomButton.onclick = enterRoom;
+          user = `user${(Math.floor((Math.random()*100000)) + 1)}`;
           connectSocket();
           setup();
         };
@@ -138,13 +164,14 @@
                 height: 200,
                 width: 300, 
                 imgData: canvas.toDataURL(),
-                userID: user
+                userID: user,
+                roomID: room
             };
         socket.emit("update", data);
     }
 
 	const doMouseout = () => {
-	   ctx.closePath();
+       ctx.closePath();
 	   dragging = false;
         const data = {
                 x: 0,
@@ -152,7 +179,8 @@
                 height: 200,
                 width: 300, 
                 imgData: canvas.toDataURL(),
-                userID: user   
+                userID: user,
+                roomID: room
             };
         socket.emit("update", data);
 	}
@@ -165,22 +193,35 @@
 		return mouse;
 	}
     
-    //somehow not sending information even though it is set up exactly the same as other methods
+    //clear canvas and disconnect from server
     const disconnect = () => {
-        const data = { userID: user, debug: 1 };
-        socket.emit('disconnect', data);
+        ctx.fillStyle="white";
+        ctx.fillRect(0,0,900, 600);
+        const data = {
+                x: 0,
+                y: 0,
+                height: 200,
+                width: 300, 
+                imgData: canvas.toDataURL(),
+                userID: user,
+                roomID: room
+            };
+        socket.emit("update", data);
+        socket.emit("disconnec", data);
     }
 
         window.onload = init;
-        window.onclose = disconnect;
+        //window.onload = disconnect;
+//        window.onunload = function(){
+//            disconnect();
+//            return null;
+//        };
+        //canvas.onblur = disconnect;
     </script>
 </head>
 <body>
     <canvas id="canvas" width="900" height="600" style="border: 1px solid black;"></canvas><br/>
-    <p>Draw an [insert object here] for now a tree.</p>
-    <canvas id="player1Canvas" width="300" height="200" style="border: 1px solid black;"></canvas>
-    <canvas id="player2Canvas" width="300" height="200" style="border: 1px solid black;"></canvas><br/>
-        <label>
+            <label>
             Stroke Color:
             <select id="strokeStyleSelector">
                 <option value="black">Black</option>
@@ -190,5 +231,12 @@
             </select>
         </label>
         <span>Eraser<input id="eraseButton" type="checkbox" value="Eraser"/></span>
+    <p>Draw an [insert object here] for now a tree.</p>
+    <canvas id="player1Canvas" width="300" height="200" style="border: 1px solid black;"></canvas>
+    <canvas id="player2Canvas" width="300" height="200" style="border: 1px solid black;"></canvas><br/>
+    <input type="text" id="room" placeholder="Enter room name:">
+    <input type="button" id="roomEnter" value="Lock into server">
+    <input type="button" id="votePlayer1" value="Vote Player 1">
+    <input type="button" id="votePlayer2" value="Vote Player 2">
 </body>
 </html>
