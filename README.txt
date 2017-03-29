@@ -1,36 +1,7 @@
-DONE:
-1. Properly replace drawers when they leave
 
-2. Properly add the first 2 players to 2 slots, everyone else gets entered as a voter
-
-4. Properly did room implementation
-
-EXTRA - New user system (so users cant easily be randomly assigned same ID)
-
----------------------------------------------------------------------------------------
-
-TO DO:
-3. Change UI depending whether the user is supposed to be a drawer or voter.
-
- (REMOVE THE OBJECT NAME FOR VOTERS)
-5. Add comments to everything
-
-CURRENT IDEA: Start with only option being to enter a room code,
-
-when sent either create that room if new or join it if not.
-
-UI is dynamically created depending on whether the user is player 1, 2 or neither.
-
-
-
-BUGS: Annoyingly, the window.onunload function only works if the tab is active when closed,
-
-so sometimes the drawings don't clear from disconnected players until a new player connects,
-
- but they are disconnected anyway.
-
-Possibly bugs when entering undefined rooms
-
+Made by Luke Zetterlund:
+To start off enter any room name (at the bottom left of the screen) to be started in a lobby.
+Any one else that enters that code will be entered into the same room as you.
 
 
 My site is a game:
@@ -83,3 +54,5 @@ Add additonal methods to clear drawings when players leave if tab is not active,
 
 I went above and beyond by creating a room structure that can be navigated simply by entering your own server name and sharing that name with your friends.
  As well as properly adding differing UI's and functionality that change depending on whether the player is a voter or drawer.
+
+Only outside code used is a mouse position grabbing bit of code from Tony Jefferson.
